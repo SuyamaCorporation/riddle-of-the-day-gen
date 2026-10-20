@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Riddle Generator & Solver</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-50 min-h-screen p-4">
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-bold text-amber-800 mb-1">Daily Riddle</h1>
+  <p class="text-sm text-gray-500 mb-5">A new riddle every day. Can you figure it out?</p>
+
+  <!-- Main Riddle Card -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span id="riddle-badge" class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-1 rounded">Daily Riddle</span>
+      <span id="riddle-num" class="text-xs text-gray-400"></span>
+    </div>
+    <p id="riddle-text" class="text-lg text-gray-800 mb-5 leading-relaxed"></p>
+
+    <div class="flex gap-2 flex-wrap mb-4">
+      <button id="hint-btn" class="bg-amber-100 text-amber-700 rounded px-4 py-2 text-sm font-semibold hover:bg-amber-200">Show Hint</button>
+      <button id="answer-btn" class="bg-orange-100 text-orange-700 rounded px-4 py-2 text-sm font-semibold hover:bg-orange-200">Reveal Answer</button>
+      <button id="random-btn" class="bg-gray-100 text-gray-600 rounded px-4 py-2 text-sm font-semibold hover:bg-gray-200 ml-auto">Random Riddle</button>
+    </div>
+
+    <div id="hint-box" class="hidden bg-amber-50 border border-amber-200 rounded p-3 text-sm text-amber-800 mb-2">
+      <strong>Hint:</strong> <span id="hint-text"></span>
+    </div>
+    <div id="answer-box" class="hidden bg-green-50 border border-green-200 rounded p-3 text-sm text-green-800">
+      <strong>Answer:</strong> <span id="answer-text"></span>
+    </div>
+  </div>
+
+  <!-- Submit Your Own -->
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="font-semibold text-gray-700 mb-3">Submit Your Own Riddle</h2>
+    <div class="space-y-2">
+      <div>
+        <label for="new-riddle" class="block text-sm font-medium text-gray-600 mb-1">Riddle</label>
+        <textarea id="new-riddle" rows="2" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" placeholder="Enter your riddle..."></textarea>
+      </div>
+      <div>
+        <label for="new-hint" class="block text-sm font-medium text-gray-600 mb-1">Hint (optional)</label>
+        <input id="new-hint" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="A helpful clue...">
+      </div>
+      <div>
+        <label for="new-answer" class="block text-sm font-medium text-gray-600 mb-1">Answer</label>
+        <input id="new-answer" type="text" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="The answer...">
+      </div>
+      <button id="submit-riddle-btn" class="bg-amber-600 text-white rounded px-4 py-2 text-sm font-semibold hover:bg-amber-700">Add to Pool</button>
+      <span id="submit-msg" class="ml-2 text-xs text-green-600"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const BASE_RIDDLES = [
+  { text: "I speak without a mouth and hear without ears. I have no body, but I come alive with the wind. What am I?", hint: "You might hear me in mountains or empty hallways", answer: "An echo" },
+  { text: "The more you take, the more you leave behind. What am I?", hint: "Think about walking", answer: "Footsteps" },
+  { text: "I have cities, but no houses live there. I have mountains, but no trees grow there. I have water, but no fish swim there. What am I?", hint: "You might hang me on a wall", answer: "A map" },
+  { text: "I have hands but cannot clap. What am I?", hint: "You check me to know when to leave", answer: "A clock" },
+  { text: "The more you have of it, the less you see. What am I?", hint: "It comes at night", answer: "Darkness" },
+  { text: "I can fly without wings. I can be caught but not thrown. What am I?", hint: "It happens to everyone", answer: "Time" },
+  { text: "What has keys but no locks, space but no room, and you can enter but cannot go in?", hint: "You're probably using one right now", answer: "A keyboard" },
+  { text: "What goes up but never comes down?", hint: "It happens on your birthday", answer: "Your age" },
+  { text: "I am not alive, but I can grow. I don't have lungs, but I need air. What am I?", hint: "It can destroy a forest", answer: "Fire" },
+  { text: "What gets wetter the more it dries?", hint: "You use it after a shower", answer: "A towel" },
+  { text: "I have a head and a tail but no body. What am I?", hint: "People flip it to make decisions", answer: "A coin" },
+  { text: "What can you catch but not throw?", hint: "Stay away from sick people", answer: "A cold" },
+  { text: "I am always in front of you but cannot be seen. What am I?", hint: "It hasn't happened yet", answer: "The future" },
+  { text: "What has one eye but cannot see?", hint: "Thread goes through it", answer: "A needle" },
+  { text: "The more you feed it, the more it grows, but water kills it. What am I?", hint: "It glows orange", answer: "Fire" },
+  { text: "What has many teeth but cannot bite?", hint: "You use it in the morning", answer: "A comb" },
+  { text: "What goes through cities and fields but never moves?", hint: "Cars drive on it", answer: "A road" },
+  { text: "I have branches but no fruit, trunk but no leaves. What am I?", hint: "You borrow things from it", answer: "A bank" },
+  { text: "What has a thumb and four fingers but is not a hand?", hint: "You wear it in cold weather", answer: "A glove" },
+  { text: "What comes once in a minute, twice in a moment, but never in a thousand years?", hint: "Think about letters, not time", answer: "The letter M" },
+  { text: "I can be cracked, made, told and played. What am I?", hint: "It makes people laugh", answer: "A joke" },
+  { text: "What has a neck but no head?", hint: "Pour from it", answer: "A bottle" },
+  { text: "What is full of holes but still holds water?", hint: "It drains your bath", answer: "A sponge" },
+  { text: "What kind of room has no doors or windows?", hint: "Plants grow in it", answer: "A mushroom" },
+  { text: "What runs but never walks, has a mouth but never talks, has a head but never weeps?", hint: "It flows to the sea", answer: "A river" },
+  { text: "I can be long or short, grown or bought, painted or left bare. What am I?", hint: "They're at the tips of your fingers", answer: "Fingernails" },
+  { text: "What has legs but doesn't walk?", hint: "You sit on it", answer: "A table" },
+  { text: "What gets bigger when more is taken away?", hint: "Dig one to find buried treasure", answer: "A hole" },
+  { text: "I live in a corner yet travel the world. What am I?", hint: "You lick me and stick me", answer: "A stamp" },
+  { text: "What starts with T, ends with T, and has T in it?", hint: "You drink it hot or cold", answer: "A teapot" },
+  { text: "What has words but never speaks?", hint: "You read it", answer: "A book" },
+  { text: "The more it dries, the wetter it becomes. What am I?", hint: "Same as towel riddle — try again!", answer: "A towel" },
+  { text: "What has four wheels and flies?", hint: "It's not a car, think smelly", answer: "A garbage truck" },
+  { text: "What has a bottom at the top?", hint: "You walk down it", answer: "Your legs" },
+  { text: "What building has the most stories?", hint: "You check books out of it", answer: "A library" },
+  { text: "I have an eye in the middle of the storm. What am I?", hint: "It spins and brings heavy rain", answer: "A hurricane" },
+  { text: "What do you break before you use it?", hint: "Breakfast time!", answer: "An egg" },
+  { text: "I'm light as a feather, yet even the strongest person cannot hold me for more than a few minutes. What am I?", hint: "You need it to live", answer: "Breath" },
+  { text: "What can run but never walk, has a mouth but never talks, has a bed but never sleeps?", hint: "It flows through valleys", answer: "A river" },
+  { text: "What is so fragile that saying its name breaks it?", hint: "Perfect for libraries", answer: "Silence" },
+  { text: "What has one head, one foot, and four legs?", hint: "You sleep in it", answer: "A bed" },
+  { text: "The person who makes it doesn't need it. The person who buys it doesn't want it for themselves. What is it?", hint: "Somber occasion", answer: "A coffin" },
+  { text: "What is always in front of you but cannot be seen?", hint: "What hasn't happened yet", answer: "The future" },
+  { text: "What can you hold in your right hand but not your left?", hint: "Use your left hand to think", answer: "Your left hand" },
+  { text: "I disappear the moment you say my name. What am I?", hint: "Libraries love me", answer: "Silence" },
+  { text: "How many months have 28 days?", hint: "Be careful, it's a trick!", answer: "All 12 months" },
+  { text: "I have rivers with no water, forests with no trees, and cities with no buildings. What am I?", hint: "Hang it on a wall", answer: "A map" },
+  { text: "What can travel around the world while staying in a corner?", hint: "Put it on an envelope", answer: "A stamp" },
+  { text: "What has an endless supply of letters but starts empty?", hint: "Email!", answer: "A mailbox" },
+  { text: "What gets sharper the more you use it?", hint: "It helps you learn and remember", answer: "Your mind" },
+  { text: "What is black when you buy it, red when you use it, and gray when you throw it away?", hint: "Used for writing on boards", answer: "Charcoal" },
+  { text: "I'm found in socks, scarves, and mittens. I'm found in the middle of kittens. What am I?", hint: "Look at the word 'kittens'", answer: "The letter T" },
+  { text: "What has 13 hearts but no other organs?", hint: "Used in games", answer: "A deck of cards" },
+  { text: "What runs all day but never walks, often murmurs, never talks, has a bed but never sleeps?", hint: "Find it in nature flowing downhill", answer: "A stream" },
+  { text: "What has a spine but no bones?", hint: "You read it", answer: "A book" },
+  { text: "What word is always spelled incorrectly?", hint: "Read the riddle again carefully", answer: "Incorrectly" },
+  { text: "I have no feet but I run. I have no wings but I fly. I have no eyes but I cry. What am I?", hint: "Look outside on a stormy day", answer: "A cloud" },
+  { text: "What can go up a chimney down but not down a chimney up?", hint: "Think about what fits and what doesn't", answer: "An umbrella" },
+  { text: "If there are three apples and you take away two, how many apples do you have?", hint: "What did you personally take?", answer: "Two — you took them" },
+  { text: "What loses its head in the morning and gets it back at night?", hint: "You sleep on it", answer: "A pillow" },
+  { text: "What starts and ends with an 'e' but only contains one letter?", hint: "The postal system", answer: "An envelope" },
+];
+
+let userRiddles = JSON.parse(localStorage.getItem('user-riddles') || '[]');
+let allRiddles = () => [...BASE_RIDDLES, ...userRiddles];
+
+function dailyRiddleIndex() {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth()+1) * 100 + today.getDate();
+  return seed % allRiddles().length;
+}
+
+let currentIdx = dailyRiddleIndex();
+let isDaily = true;
+
+function showRiddle(idx, daily) {
+  const riddles = allRiddles();
+  currentIdx = ((idx % riddles.length) + riddles.length) % riddles.length;
+  isDaily = daily;
+  const r = riddles[currentIdx];
+  document.getElementById('riddle-text').textContent = r.text;
+  document.getElementById('hint-text').textContent = r.hint || 'No hint available';
+  document.getElementById('answer-text').textContent = r.answer;
+  document.getElementById('hint-box').classList.add('hidden');
+  document.getElementById('answer-box').classList.add('hidden');
+  document.getElementById('riddle-badge').textContent = daily ? 'Daily Riddle' : 'Random Riddle';
+  document.getElementById('riddle-badge').className = 'text-xs font-semibold px-2 py-1 rounded ' + (daily ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700');
+  document.getElementById('riddle-num').textContent = '#' + (currentIdx + 1) + ' of ' + riddles.length;
+}
+
+document.getElementById('hint-btn').addEventListener('click', () => {
+  document.getElementById('hint-box').classList.toggle('hidden');
+});
+document.getElementById('answer-btn').addEventListener('click', () => {
+  document.getElementById('answer-box').classList.remove('hidden');
+});
+document.getElementById('random-btn').addEventListener('click', () => {
+  let r;
+  do { r = Math.floor(Math.random() * allRiddles().length); } while (r === currentIdx && allRiddles().length > 1);
+  showRiddle(r, false);
+});
+
+document.getElementById('submit-riddle-btn').addEventListener('click', () => {
+  const text = document.getElementById('new-riddle').value.trim();
+  const hint = document.getElementById('new-hint').value.trim();
+  const answer = document.getElementById('new-answer').value.trim();
+  if (!text || !answer) { document.getElementById('submit-msg').textContent = 'Riddle and answer are required'; return; }
+  userRiddles.push({ text, hint, answer });
+  localStorage.setItem('user-riddles', JSON.stringify(userRiddles));
+  document.getElementById('new-riddle').value = '';
+  document.getElementById('new-hint').value = '';
+  document.getElementById('new-answer').value = '';
+  document.getElementById('submit-msg').textContent = 'Added to pool!';
+  setTimeout(() => document.getElementById('submit-msg').textContent = '', 1500);
+  document.getElementById('riddle-num').textContent = '#' + (currentIdx + 1) + ' of ' + allRiddles().length;
+});
+
+showRiddle(currentIdx, true);
+</script>
+</body>
+</html>
